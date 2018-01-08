@@ -41,6 +41,13 @@ from PyQt5.QtWidgets import QMessageBox
 import cfclient
 from cfclient.ui.tab import Tab
 
+from cfclient.utils.config import Config
+from cflib.crazyflie.log import LogConfig, Log
+from cflib.crazyflie.param import Param
+
+import rospy
+from std_msgs.msg import String
+
 __author__ = 'Bitcraze AB'
 __all__ = ['ExampleTab']
 
@@ -88,10 +95,34 @@ class ExampleTab(Tab, example_tab_class):
 
         logger.debug("Crazyflie connected to {}".format(link_uri))
 
+        # self.pub = rospy.Publisher('chatter', String, queue_size=10)
+        # rospy.init_node('talker', anonymous=True, disable_signals=False)
+        # # rate = rospy.Rate(10)
+
+        lg = LogConfig("Stabilizer", Config().get("ui_update_period"))
+        lg.add_variable("stabilizer.roll", "float")
+        # lg.add_variable("stabilizer.pitch", "float")
+        # lg.add_variable("stabilizer.yaw", "float")
+        # lg.add_variable("stabilizer.thrust", "uint16_t")
+
+        try:
+            self.helper.cf.log.add_config(lg)
+            lg.data_received_cb.add_callback(self._log_data_signal.emit)
+            lg.error_cb.add_callback(self._log_error_signal.emit)
+            lg.start()
+        except KeyError as e:
+            logger.warning(str(e))
+        except AttributeError as e:
+            logger.warning(str(e))
+
+        # self.mmhc.setText("{0:.2f}".format(1.1))
+
     def _disconnected(self, link_uri):
         """Callback for when the Crazyflie has been disconnected"""
 
         logger.debug("Crazyflie disconnected from {}".format(link_uri))
+
+        # rospy.signal_shutdown("Disconnected")
 
     def _param_updated(self, name, value):
         """Callback when the registered parameter get's updated"""
@@ -103,6 +134,11 @@ class ExampleTab(Tab, example_tab_class):
 
         logger.debug("{0}:{1}:{2}".format(timestamp, log_conf.name, data))
 
+        # logger.info("Hi...")
+
+        # self.pub.publish("Hello")
+        if self.isVisible():
+            self.actualRoll.setText(("%.2f" % data["stabilizer.roll"]))
     def _logging_error(self, log_conf, msg):
         """Callback from the log layer when an error occurs"""
 

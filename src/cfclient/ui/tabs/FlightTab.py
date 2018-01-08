@@ -45,6 +45,10 @@ from cfclient.utils.input import JoystickReader
 
 from cfclient.ui.tab import Tab
 
+import rospy
+import std_msgs.msg
+from crazyflie_clients_python.msg import oa
+
 LOG_NAME_ESTIMATED_Z = "stateEstimate.z"
 
 __author__ = 'Bitcraze AB'
@@ -292,6 +296,8 @@ class FlightTab(Tab, flight_tab_class):
             self.targetHeight.setText(("%.2f m" % height))
             self.ai.setHover(height, self.is_visible())
 
+            # self.pub.publish("Hello")
+
     def _imu_data_received(self, timestamp, data, logconf):
         if self.isVisible():
             self.actualRoll.setText(("%.2f" % data["stabilizer.roll"]))
@@ -304,6 +310,13 @@ class FlightTab(Tab, flight_tab_class):
             self.ai.setRollPitch(-data["stabilizer.roll"],
                                  data["stabilizer.pitch"], self.is_visible())
 
+            mymsg = oa()
+            mymsg.rangeFront = data["oa.front"]
+            mymsg.rangeBack = data["oa.back"]
+            mymsg.rangeRight = data["oa.right"]
+            mymsg.rangeLeft = data["oa.left"]
+            self.pub.publish(mymsg)
+
     def connected(self, linkURI):
         # IMU & THRUST
         lg = LogConfig("Stabilizer", Config().get("ui_update_period"))
@@ -311,6 +324,11 @@ class FlightTab(Tab, flight_tab_class):
         lg.add_variable("stabilizer.pitch", "float")
         lg.add_variable("stabilizer.yaw", "float")
         lg.add_variable("stabilizer.thrust", "uint16_t")
+
+        lg.add_variable("oa.front", "uint16_t")
+        lg.add_variable("oa.back", "uint16_t")
+        lg.add_variable("oa.right", "uint16_t")
+        lg.add_variable("oa.left", "uint16_t")
 
         try:
             self.helper.cf.log.add_config(lg)
@@ -339,7 +357,27 @@ class FlightTab(Tab, flight_tab_class):
         except AttributeError as e:
             logger.warning(str(e))
 
+        # OA
+        # lg = LogConfig("Oa", Config().get("ui_update_period"))
+        # lg.add_variable("oa.front", "uint16_t")
+        # lg.add_variable("oa.back", "uint16_t")
+        # lg.add_variable("oa.right", "uint16_t")
+        # lg.add_variable("oa.left", "uint16_t")
+        #
+        # try:
+        #     self.helper.cf.log.add_config(lg)
+        #     lg.data_received_cb.add_callback(self._imu_data_signal.emit)
+        #     lg.error_cb.add_callback(self._log_error_signal.emit)
+        #     lg.start()
+        # except KeyError as e:
+        #     logger.warning(str(e))
+        # except AttributeError as e:
+        #     logger.warning(str(e))
+
         self._populate_assisted_mode_dropdown()
+
+        self.pub = rospy.Publisher('chatter', oa, queue_size=10)
+        rospy.init_node('talker', anonymous=True, disable_signals=False)
 
     def _set_available_sensors(self, name, available):
         logger.info("[%s]: %s", name, available)
