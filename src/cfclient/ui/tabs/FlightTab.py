@@ -49,6 +49,8 @@ import rospy
 import std_msgs.msg
 from crazyflie_clients_python.msg import oa
 
+# import socket
+
 LOG_NAME_ESTIMATED_Z = "stateEstimate.z"
 
 __author__ = 'Bitcraze AB'
@@ -61,6 +63,8 @@ flight_tab_class = uic.loadUiType(cfclient.module_path +
 
 MAX_THRUST = 65536.0
 
+# HOST = 'localhost'
+# PORT = 10001
 
 class FlightTab(Tab, flight_tab_class):
     uiSetupReadySignal = pyqtSignal()
@@ -316,6 +320,12 @@ class FlightTab(Tab, flight_tab_class):
             mymsg.rangeRight = data["oa.right"]
             mymsg.rangeLeft = data["oa.left"]
             self.pub.publish(mymsg)
+            #
+            # mydata = '(' + 'pole' + ' ' + 'A' + ' ' + 'xpos' + ' ' + str(observation[0]) + ' ' + 'xvel' + ' ' + str(
+            #     observation[1]) + ' ' + 'theta' + ' ' + str(observation[2]) + ' ' + 'omega' + ' ' + str(
+            #     observation[3]) + ')' + '\n'
+            # connection.sendall(mydata.encode('utf-8'))
+            # print("sent: {0}".format(mydata))
 
     def connected(self, linkURI):
         # IMU & THRUST
@@ -377,7 +387,14 @@ class FlightTab(Tab, flight_tab_class):
         self._populate_assisted_mode_dropdown()
 
         self.pub = rospy.Publisher('chatter', oa, queue_size=10)
-        rospy.init_node('talker', anonymous=True, disable_signals=False)
+        rospy.init_node('talker', anonymous=False, disable_signals=False)
+        #
+        # self.sock = socket.socket()
+        # self.sock.bind((HOST, PORT))
+        # self.sock.listen(1)
+        # print('Waiting for connection...')
+        # self.connection, self.client_address = self.sock.accept()
+        # print('Connected.')
 
     def _set_available_sensors(self, name, available):
         logger.info("[%s]: %s", name, available)

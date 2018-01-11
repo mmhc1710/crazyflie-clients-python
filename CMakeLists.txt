@@ -9,6 +9,7 @@ project(crazyflie_clients_python)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   rospy
+  roslisp
   std_msgs
   message_generation
 )
@@ -105,7 +106,7 @@ add_message_files(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES crazyflie_clients_python
-  CATKIN_DEPENDS rospy std_msgs message_runtime
+  CATKIN_DEPENDS rospy roslisp std_msgs message_runtime
 #  DEPENDS system_lib
 )
 
