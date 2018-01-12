@@ -46,8 +46,9 @@ from cfclient.utils.input import JoystickReader
 from cfclient.ui.tab import Tab
 
 import rospy
-import std_msgs.msg
+# import std_msgs.msg
 from crazyflie_clients_python.msg import oa
+# from crazyflie_clients_python.srv import AddTwoInts, AddTwoIntsResponse
 
 # import socket
 
@@ -81,6 +82,9 @@ class FlightTab(Tab, flight_tab_class):
     _hover_input_updated_signal = pyqtSignal(float, float, float, float)
 
     _log_error_signal = pyqtSignal(object, str)
+
+    # _handle_add_two_ints_signal = pyqtSignal(object)
+
 
     # UI_DATA_UPDATE_FPS = 10
 
@@ -136,6 +140,8 @@ class FlightTab(Tab, flight_tab_class):
         self._motor_data_signal.connect(self._motor_data_received)
 
         self._log_error_signal.connect(self._logging_error)
+
+        # self._handle_add_two_ints_signal.connect(self.handle_add_two_ints)
 
         # Connect UI signals that are in this tab
         self.flightModeCombo.currentIndexChanged.connect(self.flightmodeChange)
@@ -326,10 +332,15 @@ class FlightTab(Tab, flight_tab_class):
             #     observation[3]) + ')' + '\n'
             # connection.sendall(mydata.encode('utf-8'))
             # print("sent: {0}".format(mydata))
+    #
+    # def handle_add_two_ints(self, req):
+    #     sum = AddTwoIntsResponse(req.a + req.b)
+    #     return sum
 
     def connected(self, linkURI):
         # IMU & THRUST
         lg = LogConfig("Stabilizer", Config().get("ui_update_period"))
+        # lg = LogConfig("Stabilizer", 10)
         lg.add_variable("stabilizer.roll", "float")
         lg.add_variable("stabilizer.pitch", "float")
         lg.add_variable("stabilizer.yaw", "float")
@@ -388,6 +399,9 @@ class FlightTab(Tab, flight_tab_class):
 
         self.pub = rospy.Publisher('chatter', oa, queue_size=10)
         rospy.init_node('talker', anonymous=False, disable_signals=False)
+        #
+        # rospy.init_node('add_two_ints_server')
+        # self.srv = rospy.Service('add_two_ints', AddTwoInts, self.handle_add_two_ints)
         #
         # self.sock = socket.socket()
         # self.sock.bind((HOST, PORT))
