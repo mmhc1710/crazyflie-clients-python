@@ -397,8 +397,8 @@ class FlightTab(Tab, flight_tab_class):
 
         self._populate_assisted_mode_dropdown()
 
-        self.pub = rospy.Publisher('chatter', oa, queue_size=10)
-        rospy.init_node('talker', anonymous=False, disable_signals=False)
+        rospy.init_node('range_publisher', anonymous=False, disable_signals=False)
+        self.pub = rospy.Publisher('ranges', oa, queue_size=10)
         #
         # rospy.init_node('add_two_ints_server')
         # self.srv = rospy.Service('add_two_ints', AddTwoInts, self.handle_add_two_ints)

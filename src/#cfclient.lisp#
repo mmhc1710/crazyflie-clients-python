@@ -1,0 +1,43 @@
+(in-package :cfclient)
+
+;; (defun cb (x)  
+;;   (setq icarus:state*
+;;         (list (list 'SELF 'ME 'X 1 'Y 1)
+;;               (list 'obs 'front 'range (rangefront x))
+;;               (list 'obs 'back 'range (rangeback x))
+;;               (list 'obs 'right 'range (rangeright x))
+;;               (list 'obs 'left 'range (rangeleft x))
+;; 	      ))
+;;   (ros-info nil "~&State updated!~&~A" icarus:state*)
+;;   icarus:state*)
+
+;; (defun preattend (&optional (n 1))
+;;   (with-ros-node ("listener" :spin nil)
+;;     (subscribe "chatter" 'oa
+;;                #'cb)
+;;     (icarus:grun 1)
+;;     (dotimes (i (- n 1))
+;;       (icarus:cont 1)
+;;       (sleep .01)
+;;       )
+;;     ;; (sleep 10)
+;;     ))
+
+
+(defun cb (x)  
+  (let ((state (list (list 'SELF 'ME 'X 1 'Y 1)
+                     (list 'obs 'front 'range (craz rangefront_srv x))
+                     (list 'obs 'back 'range (rangeback_srv x))
+                     (list 'obs 'right 'range (rangeright_srv x))
+                     (list 'obs 'left 'range (rangeleft_srv x))
+	             )))
+    (ros-info nil "~&State updated!~&~A" state)
+    state))
+
+(defun preattend ()
+  (with-ros-node ("get_state_client" :spin nil)
+    (when (wait-for-service "get_state")
+      (ros-info nil "~&Calling service!")
+      (let ((data (call-service "get_state" 'oa_srv)))
+        (print data)
+        (cb data)))))
