@@ -63,6 +63,10 @@ from .dialogs.cf2config import Cf2ConfigDialog
 from .dialogs.inputconfigdialogue import InputConfigDialogue
 from .dialogs.logconfigdialogue import LogConfigDialogue
 
+from PyQt5.QtCore import QTimer
+import rospy
+from geometry_msgs.msg import Twist
+
 __author__ = 'Bitcraze AB'
 __all__ = ['MainUI']
 
@@ -388,6 +392,28 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
             node.setData((m, mux_subnodes))
 
         self._mapping_support = True
+
+        rospy.init_node('cfclient', anonymous=False, disable_signals=False)
+        self.sub = rospy.Subscriber('cmd_vel', Twist, self.sub_callback)
+
+        self.cmd_vel = Twist()
+        self.cmd_vel.linear.x = 0.0
+        self.cmd_vel.linear.y = 0.0
+        self.cmd_vel.linear.z = 0.4
+        self.cmd_vel.angular.z = 0.0
+
+        self.mytimer = QTimer(self)
+        self.mytimer.setSingleShot(False)
+        self.mytimer.timeout.connect(self.timer_func)
+        self.mytimer.start(1000)
+
+
+    def timer_func(self):
+        self.cf.commander.send_hover_setpoint(self.cmd_vel.linear.x, self.cmd_vel.linear.y, self.cmd_vel.angular.z,
+                                              self.cmd_vel.linear.z)
+
+    def sub_callback(self, data):
+        self.cmd_vel = data
 
     def interfaceChanged(self, interface):
         if interface == INTERFACE_PROMPT_TEXT:

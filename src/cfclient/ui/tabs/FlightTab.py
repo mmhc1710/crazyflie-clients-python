@@ -48,6 +48,8 @@ from cfclient.ui.tab import Tab
 import rospy
 # import std_msgs.msg
 from crazyflie_clients_python.msg import oa
+from nav_msgs.msg import Odometry
+from tf.broadcaster import TransformBroadcaster
 # from crazyflie_clients_python.srv import AddTwoInts, AddTwoIntsResponse
 
 # import socket
@@ -332,6 +334,10 @@ class FlightTab(Tab, flight_tab_class):
             #     observation[3]) + ')' + '\n'
             # connection.sendall(mydata.encode('utf-8'))
             # print("sent: {0}".format(mydata))
+            # self._hover_input_updated_signal.emit(0.0, 0.0, 0.0, 0.4)
+
+
+
     #
     # def handle_add_two_ints(self, req):
     #     sum = AddTwoIntsResponse(req.a + req.b)
@@ -397,8 +403,13 @@ class FlightTab(Tab, flight_tab_class):
 
         self._populate_assisted_mode_dropdown()
 
-        rospy.init_node('range_publisher', anonymous=False, disable_signals=False)
+        # rospy.init_node('range_publisher', anonymous=False, disable_signals=False)
         self.pub = rospy.Publisher('ranges', oa, queue_size=10)
+
+        # self.odom_pub = rospy.Publisher('odom', Odometry, queue_size=10)
+        # self.odom_broadcaster = TransformBroadcaster()
+        # self.odom = Odometry()
+
         #
         # rospy.init_node('add_two_ints_server')
         # self.srv = rospy.Service('add_two_ints', AddTwoInts, self.handle_add_two_ints)
@@ -409,6 +420,12 @@ class FlightTab(Tab, flight_tab_class):
         # print('Waiting for connection...')
         # self.connection, self.client_address = self.sock.accept()
         # print('Connected.')
+        # QTimer.singleShot(30000, self.set_althold)
+        # self.helper.cf.param.set_value("flightmode.althold", str(1))
+        # self.helper.cf.param.set_value("flightmode.althold", str(0))
+
+    def set_althold(self):
+        self.helper.cf.param.set_value("flightmode.althold", 1)
 
     def _set_available_sensors(self, name, available):
         logger.info("[%s]: %s", name, available)
