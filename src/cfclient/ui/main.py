@@ -404,16 +404,24 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
 
         self.mytimer = QTimer(self)
         self.mytimer.setSingleShot(False)
-        self.mytimer.timeout.connect(self.timer_func)
+        self.mytimer.timeout.connect(self.timer_callback)
         self.mytimer.start(1000)
 
 
-    def timer_func(self):
+    def timer_callback(self):
+        # if self.cmd_vel.linear.z <= 0.0:
+        #     self.cf.commander.send_hover_setpoint(self.cmd_vel.linear.x, self.cmd_vel.linear.y, self.cmd_vel.angular.z,
+        #                                           self.cmd_vel.linear.z)
+        #     QTimer.singleShot(2000, self.stop_callback)
+        # else:
         self.cf.commander.send_hover_setpoint(self.cmd_vel.linear.x, self.cmd_vel.linear.y, self.cmd_vel.angular.z,
-                                              self.cmd_vel.linear.z)
+                                          self.cmd_vel.linear.z)
 
     def sub_callback(self, data):
         self.cmd_vel = data
+
+    # def stop_callback(self):
+    #     self.cf.commander.send_stop_setpoint()
 
     def interfaceChanged(self, interface):
         if interface == INTERFACE_PROMPT_TEXT:
