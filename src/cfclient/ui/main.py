@@ -66,6 +66,7 @@ from .dialogs.logconfigdialogue import LogConfigDialogue
 from PyQt5.QtCore import QTimer
 import rospy
 from geometry_msgs.msg import Twist
+from crazyflie_clients_python.msg import oa
 
 __author__ = 'Bitcraze AB'
 __all__ = ['MainUI']
@@ -394,18 +395,26 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
         self._mapping_support = True
 
         rospy.init_node('cfclient', anonymous=False, disable_signals=False)
-        self.sub = rospy.Subscriber('cmd_vel', Twist, self.sub_callback)
+        self.cmd_vel_sub = rospy.Subscriber('cmd_vel', Twist, self.cmd_vel_sub_callback)
+        self.ranges_sub = rospy.Subscriber('ranges', oa, self.ranges_sub_callback)
 
         self.cmd_vel = Twist()
         self.cmd_vel.linear.x = 0.0
         self.cmd_vel.linear.y = 0.0
-        self.cmd_vel.linear.z = 0.4
+        self.cmd_vel.linear.z = 0.3
         self.cmd_vel.angular.z = 0.0
 
         self.mytimer = QTimer(self)
         self.mytimer.setSingleShot(False)
         self.mytimer.timeout.connect(self.timer_callback)
         self.mytimer.start(1000)
+
+        self.move_possible_front = False
+        self.move_possible_back = False
+
+        self.start_count = 0
+        self.done_front = False
+        self.done_back = False
 
 
     def timer_callback(self):
@@ -414,11 +423,37 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
         #                                           self.cmd_vel.linear.z)
         #     QTimer.singleShot(2000, self.stop_callback)
         # else:
+        if self.start_count > 5:
+            if not self.done_front and  self.move_possible_front:
+                self.cmd_vel.linear.x = 0.2
+                self.done_front = True
+            elif not self.done_back and  self.move_possible_back:
+                self.cmd_vel.linear.x = -0.2
+                self.done_back = True
+            else:
+                self.cmd_vel.linear.x = 0
+                # self.done_front = False
+                # self.done_back = False
+                self.cf.commander.send_hover_setpoint(0,0,0,0.1)
+                self.cf.commander.send_stop_setpoint()
+
+
+
         self.cf.commander.send_hover_setpoint(self.cmd_vel.linear.x, self.cmd_vel.linear.y, self.cmd_vel.angular.z,
                                           self.cmd_vel.linear.z)
+        self.start_count = self.start_count + 1
 
-    def sub_callback(self, data):
+    def cmd_vel_sub_callback(self, data):
         self.cmd_vel = data
+
+    def ranges_sub_callback(self, data):
+        if data.rangeFront > 500:
+            self.move_possible_front = True
+        else: self.move_possible_front = False
+
+        if data.rangeBack > 500:
+            self.move_possible_back = True
+        else: self.move_possible_back = False
 
     # def stop_callback(self):
     #     self.cf.commander.send_stop_setpoint()
