@@ -1,4 +1,7 @@
 <launch>
-  <node pkg="tf" type="static_transform_publisher" name="base2odom_broadcaster" args="0 0 0 0 0 0 1 odom base_link 100" />
-  <node pkg="tf" type="static_transform_publisher" name="base2scan_broadcaster" args="0 0 0 0 0 0 1 base_link base_laser 100" />
+  <!--node pkg="tf" type="static_transform_publisher" name="base2odom_broadcaster" args="0 0 0 0 0 0 1 odom base_link 100" /-->
+  <node pkg="tf" type="static_transform_publisher" name="odom2world_broadcaster" args="0 0 0 0 0 0 1 world odom 100" />
+  <node pkg="tf" type="static_transform_publisher" name="scan2base_broadcaster" args="0 0 0 0 0 0 1 base_link base_laser 100" />
+  <node pkg="tf" type="static_transform_publisher" name="map2vicon_broadcaster" args="0 0 0 0 0 0 1 map vicon/CF2/CF2 100" />
+  <node pkg="tf" type="static_transform_publisher" name="vicon2base_broadcaster" args="0 0 0 0 0 0 1 vicon/CF2/CF2 base_link 100" />
 </launch>
