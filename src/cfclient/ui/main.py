@@ -131,6 +131,8 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
     _input_discovery_signal = pyqtSignal(object)
     _log_error_signal = pyqtSignal(object, str)
 
+    _my_hover_callback_signal = pyqtSignal(float, float, float, float)
+
     def __init__(self, *args):
         super(MainUI, self).__init__(*args)
         self.setupUi(self)
@@ -256,8 +258,11 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
         self.joystickReader.heighthold_input_updated.add_callback(
             self.cf.commander.send_zdistance_setpoint)
 
+        self._my_hover_callback_signal.connect(self.my_hover_callback)
+        # self.joystickReader.hover_input_updated.add_callback(
+        #     self.cf.commander.send_hover_setpoint)
         self.joystickReader.hover_input_updated.add_callback(
-            self.cf.commander.send_hover_setpoint)
+            self._my_hover_callback_signal.emit)
 
         # Connection callbacks and signal wrappers for UI protection
         self.cf.connected.add_callback(self.connectionDoneSignal.emit)
@@ -426,29 +431,33 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
         #                                           self.cmd_vel.linear.z)
         #     QTimer.singleShot(2000, self.stop_callback)
         # else:
-        if self.start_count > 2:
-            max_index = max(enumerate([self.ranges.rangeLeft, self.ranges.rangeFront, self.ranges.rangeRight]), key=itemgetter(1))[0]
-            if max_index == 0:
-                [self.cmd_vel.linear.x, self.cmd_vel.linear.y, self.cmd_vel.angular.z] = [0, 0, -15]
-                # [self.cmd_vel.linear.x, self.cmd_vel.linear.y] = [0, 0.2]
-            elif max_index == 1:
-                # [self.cmd_vel.linear.x, self.cmd_vel.linear.y] = [0.2, 0]
-                temp = (self.ranges.rangeLeft-self.ranges.rangeRight)/2.
-                if abs(temp) > 100.:
-                    if temp>0:
-                        [self.cmd_vel.linear.x, self.cmd_vel.linear.y, self.cmd_vel.angular.z] = [0, -0.2, 0]
-                    else:
-                        [self.cmd_vel.linear.x, self.cmd_vel.linear.y, self.cmd_vel.angular.z] = [0, 0.2, 0]
-                else:
-                    [self.cmd_vel.linear.x, self.cmd_vel.linear.y, self.cmd_vel.angular.z] = [0.2, 0, 0]
-            elif max_index == 2:
-                # [self.cmd_vel.linear.x, self.cmd_vel.linear.y] = [0, -0.2]
-                [self.cmd_vel.linear.x, self.cmd_vel.linear.y, self.cmd_vel.angular.z] = [0, 0, 15]
-        self.cmd_vel.linear.z = 0.4
+        # if self.start_count > 2:
+        #     max_index = max(enumerate([self.ranges.rangeLeft, self.ranges.rangeFront, self.ranges.rangeRight]), key=itemgetter(1))[0]
+        #     if max_index == 0:
+        #         [self.cmd_vel.linear.x, self.cmd_vel.linear.y, self.cmd_vel.angular.z] = [0, 0, -15]
+        #         # [self.cmd_vel.linear.x, self.cmd_vel.linear.y] = [0, 0.2]
+        #     elif max_index == 1:
+        #         # [self.cmd_vel.linear.x, self.cmd_vel.linear.y] = [0.2, 0]
+        #         temp = (self.ranges.rangeLeft-self.ranges.rangeRight)/2.
+        #         if abs(temp) > 10.:
+        #             if temp>0:
+        #                 [self.cmd_vel.linear.x, self.cmd_vel.linear.y, self.cmd_vel.angular.z] = [0, -0.1, 0]
+        #             else:
+        #                 [self.cmd_vel.linear.x, self.cmd_vel.linear.y, self.cmd_vel.angular.z] = [0, 0.1, 0]
+        #         else:
+        #             [self.cmd_vel.linear.x, self.cmd_vel.linear.y, self.cmd_vel.angular.z] = [0.1, 0, 0]
+        #     elif max_index == 2:
+        #         # [self.cmd_vel.linear.x, self.cmd_vel.linear.y] = [0, -0.2]
+        #         [self.cmd_vel.linear.x, self.cmd_vel.linear.y, self.cmd_vel.angular.z] = [0, 0, 15]
+        #
+        # self.cmd_vel.linear.x = 0.0
+        # self.cmd_vel.linear.y = 0.0
+        # self.cmd_vel.linear.z = 0.4
         # self.cmd_vel.angular.z = 0.0
-        self.cf.commander.send_hover_setpoint(self.cmd_vel.linear.x, self.cmd_vel.linear.y,
-                                              self.cmd_vel.angular.z,
-                                              self.cmd_vel.linear.z)
+        #
+        # self.cf.commander.send_hover_setpoint(self.cmd_vel.linear.x, self.cmd_vel.linear.y,
+        #                                       self.cmd_vel.angular.z,
+        #                                       self.cmd_vel.linear.z)
         self.start_count = self.start_count + 1
             # if not self.done_front and  self.move_possible_front:
             #     self.cmd_vel.linear.x = 0.2
@@ -463,6 +472,16 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
             #     self.cf.commander.send_hover_setpoint(0,0,0,0.1)
             #     self.cf.commander.send_stop_setpoint()
 
+    def my_hover_callback(self, vx, vy, yawrate, zdistance):
+        if (vx > 0.) and (self.ranges.rangeFront < 200):
+            vx = 0.0
+        if (vx < 0.) and (self.ranges.rangeBack < 200):
+            vx = 0.0
+        if (vy > 0.) and (self.ranges.rangeLeft < 200):
+            vy = 0.0
+        if (vy < 0.) and (self.ranges.rangeRight < 200):
+            vy = 0.0
+        self.cf.commander.send_hover_setpoint(vx, vy, yawrate, zdistance)
 
     def cmd_vel_sub_callback(self, data):
         self.cmd_vel = data
