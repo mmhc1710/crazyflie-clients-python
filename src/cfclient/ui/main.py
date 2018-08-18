@@ -68,6 +68,7 @@ import rospy
 from geometry_msgs.msg import Twist
 from crazyflie_clients_python.msg import oa
 from operator import itemgetter
+from PyQt5 import QtCore
 
 __author__ = 'Bitcraze AB'
 __all__ = ['MainUI']
@@ -132,6 +133,7 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
     _log_error_signal = pyqtSignal(object, str)
 
     _my_hover_callback_signal = pyqtSignal(float, float, float, float)
+    newOnkeyPressEventSignal = pyqtSignal(object)
 
     def __init__(self, *args):
         super(MainUI, self).__init__(*args)
@@ -263,6 +265,7 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
         #     self.cf.commander.send_hover_setpoint)
         self.joystickReader.hover_input_updated.add_callback(
             self._my_hover_callback_signal.emit)
+        self.newOnkeyPressEventSignal.connect(self.newOnkeyPressEvent)
 
         # Connection callbacks and signal wrappers for UI protection
         self.cf.connected.add_callback(self.connectionDoneSignal.emit)
@@ -407,7 +410,7 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
         self.cmd_vel = Twist()
         self.cmd_vel.linear.x = 0.0
         self.cmd_vel.linear.y = 0.0
-        self.cmd_vel.linear.z = 0.4
+        self.cmd_vel.linear.z = 0.0
         self.cmd_vel.angular.z = 0.0
 
         self.mytimer = QTimer(self)
@@ -421,8 +424,14 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
         self.start_count = 0
         self.done_front = False
         self.done_back = False
+        self.inFlight = False
 
         self.ranges = oa()
+        #
+        # self.vx = 0.0
+        # self.vy = 0.0
+        # self.yawrate = 0.0
+        # self.zdistance = 0.0
 
 
     def timer_callback(self):
@@ -455,9 +464,22 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
         # self.cmd_vel.linear.z = 0.4
         # self.cmd_vel.angular.z = 0.0
         #
-        # self.cf.commander.send_hover_setpoint(self.cmd_vel.linear.x, self.cmd_vel.linear.y,
-        #                                       self.cmd_vel.angular.z,
-        #                                       self.cmd_vel.linear.z)
+        if self.cmd_vel.linear.z > 0.0:
+            # if self.cmd_vel.linear.z < 2.0:
+            #     self.cf.commander.send_stop_setpoint()
+            # else:
+            if (self.cmd_vel.linear.y > 0.0) and (self.ranges.rangeLeft < 200):
+                self.cmd_vel.linear.y = 0.0
+            if (self.cmd_vel.linear.y < 0.0) and (self.ranges.rangeRight < 200):
+                self.cmd_vel.linear.y = 0.0
+            if (self.cmd_vel.linear.x > 0.0) and (self.ranges.rangeFront < 200):
+                self.cmd_vel.linear.x = 0.0
+            if (self.cmd_vel.linear.x < 0.0) and (self.ranges.rangeBack < 200):
+                self.cmd_vel.linear.x = 0.0
+
+            self.cf.commander.send_hover_setpoint(self.cmd_vel.linear.x, self.cmd_vel.linear.y,
+                                              self.cmd_vel.angular.z,
+                                              self.cmd_vel.linear.z)
         self.start_count = self.start_count + 1
             # if not self.done_front and  self.move_possible_front:
             #     self.cmd_vel.linear.x = 0.2
@@ -482,6 +504,27 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
         if (vy < 0.) and (self.ranges.rangeRight < 200):
             vy = 0.0
         self.cf.commander.send_hover_setpoint(vx, vy, yawrate, zdistance)
+
+    def newOnkeyPressEvent(self, e):
+        if e.key() == QtCore.Qt.Key_S:
+            if not self.inFlight:
+                self.cmd_vel.linear.z = 0.3
+                self.inFlight = True
+            else:
+                self.cmd_vel.linear.z = 0.0
+                self.inFlight = False
+        elif e.key() == QtCore.Qt.Key_U:
+            self.cmd_vel.linear.z = self.cmd_vel.linear.z + 0.1
+        elif e.key() == QtCore.Qt.Key_H:
+            self.cmd_vel.linear.z = self.cmd_vel.linear.z - 0.1
+        elif e.key() == QtCore.Qt.Key_I:
+            self.cmd_vel.linear.x = self.cmd_vel.linear.x + 0.1
+        elif e.key() == QtCore.Qt.Key_K:
+            self.cmd_vel.linear.x = self.cmd_vel.linear.x - 0.1
+        elif e.key() == QtCore.Qt.Key_J:
+            self.cmd_vel.linear.y = self.cmd_vel.linear.y + 0.1
+        elif e.key() == QtCore.Qt.Key_L:
+            self.cmd_vel.linear.y = self.cmd_vel.linear.y - 0.1
 
     def cmd_vel_sub_callback(self, data):
         self.cmd_vel = data

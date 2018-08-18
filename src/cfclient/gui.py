@@ -151,6 +151,7 @@ def main():
             pass
 
     main_window = MainUI()
+    main_window.keyPressEvent = main_window.newOnkeyPressEventSignal.emit
     main_window.show()
     sys.exit(app.exec_())
 
