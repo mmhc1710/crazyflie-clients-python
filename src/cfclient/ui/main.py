@@ -468,17 +468,22 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
             # if self.cmd_vel.linear.z < 2.0:
             #     self.cf.commander.send_stop_setpoint()
             # else:
-            if (self.cmd_vel.linear.y > 0.0) and (self.ranges.rangeLeft < 200):
-                self.cmd_vel.linear.y = 0.0
-            if (self.cmd_vel.linear.y < 0.0) and (self.ranges.rangeRight < 200):
-                self.cmd_vel.linear.y = 0.0
-            if (self.cmd_vel.linear.x > 0.0) and (self.ranges.rangeFront < 200):
-                self.cmd_vel.linear.x = 0.0
-            if (self.cmd_vel.linear.x < 0.0) and (self.ranges.rangeBack < 200):
-                self.cmd_vel.linear.x = 0.0
+            if self.start_count>50:
+                if (self.cmd_vel.linear.y > 0.0) and (self.ranges.rangeLeft < 100):
+                    self.cmd_vel.linear.y = 0.00
+                else: self.cmd_vel.linear.y = 0.0
+                if (self.cmd_vel.linear.y < 0.0) and (self.ranges.rangeRight < 100):
+                    self.cmd_vel.linear.y = -0.00
+                else: self.cmd_vel.linear.y = 0.0
+                if (self.cmd_vel.linear.x > 0.0) and (self.ranges.rangeFront < 200):
+                    self.cmd_vel.linear.x = 0.0
+                # else: self.cmd_vel.linear.x = 0.0
+                if (self.cmd_vel.linear.x < 0.0) and (self.ranges.rangeBack < 200):
+                    self.cmd_vel.linear.x = 0.0
+                # else: self.cmd_vel.linear.x = 0.0
 
             self.cf.commander.send_hover_setpoint(self.cmd_vel.linear.x, self.cmd_vel.linear.y,
-                                              self.cmd_vel.angular.z,
+                                                  self.cmd_vel.angular.z,
                                               self.cmd_vel.linear.z)
         self.start_count = self.start_count + 1
             # if not self.done_front and  self.move_possible_front:
@@ -518,13 +523,17 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
         elif e.key() == QtCore.Qt.Key_H:
             self.cmd_vel.linear.z = self.cmd_vel.linear.z - 0.1
         elif e.key() == QtCore.Qt.Key_I:
-            self.cmd_vel.linear.x = self.cmd_vel.linear.x + 0.1
+            if self.cmd_vel.linear.x < 0.5:
+                self.cmd_vel.linear.x = self.cmd_vel.linear.x + 0.05
         elif e.key() == QtCore.Qt.Key_K:
-            self.cmd_vel.linear.x = self.cmd_vel.linear.x - 0.1
+            if self.cmd_vel.linear.x > -0.05:
+                self.cmd_vel.linear.x = self.cmd_vel.linear.x - 0.05
         elif e.key() == QtCore.Qt.Key_J:
-            self.cmd_vel.linear.y = self.cmd_vel.linear.y + 0.1
+            if self.cmd_vel.linear.y < 0.05:
+                self.cmd_vel.linear.y = self.cmd_vel.linear.y + 0.05
         elif e.key() == QtCore.Qt.Key_L:
-            self.cmd_vel.linear.y = self.cmd_vel.linear.y - 0.1
+            if self.cmd_vel.linear.y > -0.05:
+                self.cmd_vel.linear.y = self.cmd_vel.linear.y - 0.05
 
     def cmd_vel_sub_callback(self, data):
         self.cmd_vel = data
