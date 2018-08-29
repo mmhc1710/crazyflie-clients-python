@@ -417,6 +417,13 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
         self.cmd_vel.linear.z = 0.0
         self.cmd_vel.angular.z = 0.0
 
+
+        self.cmd_vel_man = Twist()
+        self.cmd_vel_man.linear.x = 0.0
+        self.cmd_vel_man.linear.y = 0.0
+        self.cmd_vel_man.linear.z = 0.0
+        self.cmd_vel_man.angular.z = 0.0
+
         self.mytimer = QTimer(self)
         self.mytimer.setSingleShot(False)
         self.mytimer.timeout.connect(self.timer_callback)
@@ -429,6 +436,8 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
         self.done_front = False
         self.done_back = False
         self.inFlight = False
+        self.latObstPrsnt = False
+        self.lonObstPrsnt = False
 
         self.ranges = oa()
         #
@@ -478,11 +487,31 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
             #     self.cmd_vel.linear.x = 0.2
             # else: self.cmd_vel.linear.x = 0.0
 
-            if self.ranges.rangeRight < 200:
-                self.cmd_vel.linear.y = 0.2
-            elif self.ranges.rangeLeft < 200:
-                self.cmd_vel.linear.y = -0.2
-            else: self.cmd_vel.linear.y = 0.0
+            if self.ranges.rangeRight < 300:
+                self.cmd_vel.linear.y = 0.1
+                self.latObstPrsnt = True
+            elif self.ranges.rangeLeft < 300:
+                self.cmd_vel.linear.y = -0.1
+                self.latObstPrsnt = True
+            elif self.latObstPrsnt:
+                self.cmd_vel.linear.y = 0.0
+                self.latObstPrsnt = False
+            elif not self.latObstPrsnt:
+                self.cmd_vel.linear.y = self.cmd_vel_man.linear.y
+
+            if self.ranges.rangeFront < 300:
+                self.cmd_vel.linear.x = -0.1
+                self.lonObstPrsnt = True
+            elif self.ranges.rangeBack < 300:
+                self.cmd_vel.linear.x = 0.1
+                self.lonObstPrsnt = True
+            elif self.lonObstPrsnt:
+                self.cmd_vel.linear.x = 0.0
+                self.lonObstPrsnt = False
+            elif not self.lonObstPrsnt:
+                self.cmd_vel.linear.x = self.cmd_vel_man.linear.x
+
+
             # if self.start_count>50:
             #     if self.ranges.rangeLeft < 300:
             #         self.cmd_vel.linear.y = 0.2
@@ -541,17 +570,17 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
         elif e.key() == QtCore.Qt.Key_H:
             self.cmd_vel.linear.z = self.cmd_vel.linear.z - 0.1
         elif e.key() == QtCore.Qt.Key_I:
-            if self.cmd_vel.linear.x < 1.5:
-                self.cmd_vel.linear.x = self.cmd_vel.linear.x + 0.2
+            if self.cmd_vel_man.linear.x < 1.5:
+                self.cmd_vel_man.linear.x = self.cmd_vel.linear.x + 0.1
         elif e.key() == QtCore.Qt.Key_K:
-            if self.cmd_vel.linear.x > -1.5:
-                self.cmd_vel.linear.x = self.cmd_vel.linear.x - 0.2
+            if self.cmd_vel_man.linear.x > -1.5:
+                self.cmd_vel_man.linear.x = self.cmd_vel.linear.x - 0.1
         elif e.key() == QtCore.Qt.Key_J:
-            if self.cmd_vel.linear.y < 1.5:
-                self.cmd_vel.linear.y = self.cmd_vel.linear.y + 0.2
+            if self.cmd_vel_man.linear.y < 1.5:
+                self.cmd_vel_man.linear.y = self.cmd_vel.linear.y + 0.1
         elif e.key() == QtCore.Qt.Key_L:
-            if self.cmd_vel.linear.y > -1.5:
-                self.cmd_vel.linear.y = self.cmd_vel.linear.y - 0.2
+            if self.cmd_vel_man.linear.y > -1.5:
+                self.cmd_vel_man.linear.y = self.cmd_vel.linear.y - 0.1
 
     def cmd_vel_sub_callback(self, data):
         self.cmd_vel = data
