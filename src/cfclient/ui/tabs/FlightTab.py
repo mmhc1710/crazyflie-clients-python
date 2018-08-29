@@ -327,6 +327,7 @@ class FlightTab(Tab, flight_tab_class):
             mymsg.rangeBack = data["oa.back"]
             mymsg.rangeRight = data["oa.right"]
             mymsg.rangeLeft = data["oa.left"]
+            mymsg.stamp = rospy.get_rostime()
             self.pub.publish(mymsg)
             #
             # mydata = '(' + 'pole' + ' ' + 'A' + ' ' + 'xpos' + ' ' + str(observation[0]) + ' ' + 'xvel' + ' ' + str(
@@ -403,7 +404,7 @@ class FlightTab(Tab, flight_tab_class):
 
         self._populate_assisted_mode_dropdown()
 
-        # rospy.init_node('range_publisher', anonymous=False, disable_signals=False)
+        # rospy.init_node('cfclient', anonymous=False, disable_signals=False)
         self.pub = rospy.Publisher('ranges', oa, queue_size=10)
 
         # self.odom_pub = rospy.Publisher('odom', Odometry, queue_size=10)

@@ -66,6 +66,7 @@ from .dialogs.logconfigdialogue import LogConfigDialogue
 from PyQt5.QtCore import QTimer
 import rospy
 from geometry_msgs.msg import Twist
+from crazyflie_clients_python.msg import vel_cmd
 from crazyflie_clients_python.msg import oa
 from operator import itemgetter
 from PyQt5 import QtCore
@@ -405,8 +406,11 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
 
         rospy.init_node('cfclient', anonymous=False, disable_signals=False)
         # self.cmd_vel_sub = rospy.Subscriber('cmd_vel', Twist, self.cmd_vel_sub_callback)
+        # self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
+        self.cmd_vel_pub = rospy.Publisher('vel_cmd', vel_cmd, queue_size=10)
         self.ranges_sub = rospy.Subscriber('ranges', oa, self.ranges_sub_callback)
 
+        self.vel_cmd = vel_cmd()
         self.cmd_vel = Twist()
         self.cmd_vel.linear.x = 0.0
         self.cmd_vel.linear.y = 0.0
@@ -468,23 +472,37 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
             # if self.cmd_vel.linear.z < 2.0:
             #     self.cf.commander.send_stop_setpoint()
             # else:
-            if self.start_count>50:
-                if (self.cmd_vel.linear.y > 0.0) and (self.ranges.rangeLeft < 100):
-                    self.cmd_vel.linear.y = 0.00
-                else: self.cmd_vel.linear.y = 0.0
-                if (self.cmd_vel.linear.y < 0.0) and (self.ranges.rangeRight < 100):
-                    self.cmd_vel.linear.y = -0.00
-                else: self.cmd_vel.linear.y = 0.0
-                if (self.cmd_vel.linear.x > 0.0) and (self.ranges.rangeFront < 200):
-                    self.cmd_vel.linear.x = 0.0
-                # else: self.cmd_vel.linear.x = 0.0
-                if (self.cmd_vel.linear.x < 0.0) and (self.ranges.rangeBack < 200):
-                    self.cmd_vel.linear.x = 0.0
-                # else: self.cmd_vel.linear.x = 0.0
+            # if self.ranges.rangeFront < 300:
+            #     self.cmd_vel.linear.x = -0.2
+            # elif self.ranges.rangeBack < 300:
+            #     self.cmd_vel.linear.x = 0.2
+            # else: self.cmd_vel.linear.x = 0.0
+
+            if self.ranges.rangeRight < 200:
+                self.cmd_vel.linear.y = 0.2
+            elif self.ranges.rangeLeft < 200:
+                self.cmd_vel.linear.y = -0.2
+            else: self.cmd_vel.linear.y = 0.0
+            # if self.start_count>50:
+            #     if self.ranges.rangeLeft < 300:
+            #         self.cmd_vel.linear.y = 0.2
+            #     else: self.cmd_vel.linear.y = 0.0
+            #     if self.ranges.rangeRight < 300:
+            #         self.cmd_vel.linear.y = -0.2
+            #     else: self.cmd_vel.linear.y = 0.0
+            #     if self.ranges.rangeFront < 200:
+            #         self.cmd_vel.linear.x = 0.0
+            #     # else: self.cmd_vel.linear.x = 0.0
+            #     if self.ranges.rangeBack < 200:
+            #         self.cmd_vel.linear.x = 0.0
+            #     # else: self.cmd_vel.linear.x = 0.0
 
             self.cf.commander.send_hover_setpoint(self.cmd_vel.linear.x, self.cmd_vel.linear.y,
                                                   self.cmd_vel.angular.z,
                                               self.cmd_vel.linear.z)
+        self.vel_cmd.cmd_vel = self.cmd_vel
+        self.vel_cmd.stamp = rospy.get_rostime()
+        self.cmd_vel_pub.publish(self.vel_cmd)
         self.start_count = self.start_count + 1
             # if not self.done_front and  self.move_possible_front:
             #     self.cmd_vel.linear.x = 0.2
@@ -523,17 +541,17 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
         elif e.key() == QtCore.Qt.Key_H:
             self.cmd_vel.linear.z = self.cmd_vel.linear.z - 0.1
         elif e.key() == QtCore.Qt.Key_I:
-            if self.cmd_vel.linear.x < 0.5:
-                self.cmd_vel.linear.x = self.cmd_vel.linear.x + 0.05
+            if self.cmd_vel.linear.x < 1.5:
+                self.cmd_vel.linear.x = self.cmd_vel.linear.x + 0.2
         elif e.key() == QtCore.Qt.Key_K:
-            if self.cmd_vel.linear.x > -0.05:
-                self.cmd_vel.linear.x = self.cmd_vel.linear.x - 0.05
+            if self.cmd_vel.linear.x > -1.5:
+                self.cmd_vel.linear.x = self.cmd_vel.linear.x - 0.2
         elif e.key() == QtCore.Qt.Key_J:
-            if self.cmd_vel.linear.y < 0.05:
-                self.cmd_vel.linear.y = self.cmd_vel.linear.y + 0.05
+            if self.cmd_vel.linear.y < 1.5:
+                self.cmd_vel.linear.y = self.cmd_vel.linear.y + 0.2
         elif e.key() == QtCore.Qt.Key_L:
-            if self.cmd_vel.linear.y > -0.05:
-                self.cmd_vel.linear.y = self.cmd_vel.linear.y - 0.05
+            if self.cmd_vel.linear.y > -1.5:
+                self.cmd_vel.linear.y = self.cmd_vel.linear.y - 0.2
 
     def cmd_vel_sub_callback(self, data):
         self.cmd_vel = data
