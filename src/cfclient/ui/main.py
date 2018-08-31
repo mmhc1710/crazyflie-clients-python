@@ -461,48 +461,7 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
 
 
     def timer_callback(self):
-        # if self.cmd_vel.linear.z <= 0.0:
-        #     self.cf.commander.send_hover_setpoint(self.cmd_vel.linear.x, self.cmd_vel.linear.y, self.cmd_vel.angular.z,
-        #                                           self.cmd_vel.linear.z)
-        #     QTimer.singleShot(2000, self.stop_callback)
-        # else:
-        # if self.start_count > 2:
-        #     max_index = max(enumerate([self.ranges.rangeLeft, self.ranges.rangeFront, self.ranges.rangeRight]), key=itemgetter(1))[0]
-        #     if max_index == 0:
-        #         [self.cmd_vel.linear.x, self.cmd_vel.linear.y, self.cmd_vel.angular.z] = [0, 0, -15]
-        #         # [self.cmd_vel.linear.x, self.cmd_vel.linear.y] = [0, 0.2]
-        #     elif max_index == 1:
-        #         # [self.cmd_vel.linear.x, self.cmd_vel.linear.y] = [0.2, 0]
-        #         temp = (self.ranges.rangeLeft-self.ranges.rangeRight)/2.
-        #         if abs(temp) > 10.:
-        #             if temp>0:
-        #                 [self.cmd_vel.linear.x, self.cmd_vel.linear.y, self.cmd_vel.angular.z] = [0, -0.1, 0]
-        #             else:
-        #                 [self.cmd_vel.linear.x, self.cmd_vel.linear.y, self.cmd_vel.angular.z] = [0, 0.1, 0]
-        #         else:
-        #             [self.cmd_vel.linear.x, self.cmd_vel.linear.y, self.cmd_vel.angular.z] = [0.1, 0, 0]
-        #     elif max_index == 2:
-        #         # [self.cmd_vel.linear.x, self.cmd_vel.linear.y] = [0, -0.2]
-        #         [self.cmd_vel.linear.x, self.cmd_vel.linear.y, self.cmd_vel.angular.z] = [0, 0, 15]
-        #
-        # self.cmd_vel.linear.x = 0.0
-        # self.cmd_vel.linear.y = 0.0
-        # self.cmd_vel.linear.z = 0.4
-        # self.cmd_vel.angular.z = 0.0
-        #
-        # self.time_curr = rospy.get_rostime()
-        # self.dt = self.time_curr - self.time_last
-        # self.time_last = self.time_curr
-        if self.cmd_vel.linear.z > 0.2:
-            # if self.cmd_vel.linear.z < 2.0:
-            #     self.cf.commander.send_stop_setpoint()
-            # else:
-            # if self.ranges.rangeFront < 300:
-            #     self.cmd_vel.linear.x = -0.2
-            # elif self.ranges.rangeBack < 300:
-            #     self.cmd_vel.linear.x = 0.2
-            # else: self.cmd_vel.linear.x = 0.0
-
+        if self.cmd_vel.linear.z > 0.2 and self.OAEnabled:
             if self.ranges.rangeRight < self.threshold:
                 self.err = (self.threshold - self.ranges.rangeRight)/self.threshold
                 dedt = (self.err - self.err_last)/self.dt
@@ -536,21 +495,6 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
             elif not self.lonObstPrsnt:
                 self.cmd_vel.linear.x = self.cmd_vel_man.linear.x
 
-
-            # if self.start_count>50:
-            #     if self.ranges.rangeLeft < 300:
-            #         self.cmd_vel.linear.y = 0.2
-            #     else: self.cmd_vel.linear.y = 0.0
-            #     if self.ranges.rangeRight < 300:
-            #         self.cmd_vel.linear.y = -0.2
-            #     else: self.cmd_vel.linear.y = 0.0
-            #     if self.ranges.rangeFront < 200:
-            #         self.cmd_vel.linear.x = 0.0
-            #     # else: self.cmd_vel.linear.x = 0.0
-            #     if self.ranges.rangeBack < 200:
-            #         self.cmd_vel.linear.x = 0.0
-            #     # else: self.cmd_vel.linear.x = 0.0
-
             self.cf.commander.send_hover_setpoint(self.cmd_vel.linear.x, self.cmd_vel.linear.y,
                                                   self.cmd_vel.angular.z,
                                               self.cmd_vel.linear.z)
@@ -558,18 +502,6 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
         self.vel_cmd.stamp = rospy.get_rostime()
         self.cmd_vel_pub.publish(self.vel_cmd)
         self.start_count = self.start_count + 1
-            # if not self.done_front and  self.move_possible_front:
-            #     self.cmd_vel.linear.x = 0.2
-            #     self.done_front = True
-            # elif not self.done_back and  self.move_possible_back:
-            #     self.cmd_vel.linear.x = -0.2
-            #     self.done_back = True
-            # else:
-            #     self.cmd_vel.linear.x = 0
-            #     # self.done_front = False
-            #     # self.done_back = False
-            #     self.cf.commander.send_hover_setpoint(0,0,0,0.1)
-            #     self.cf.commander.send_stop_setpoint()
 
     def clip (self, x, limit):
         if x >= limit:
@@ -594,9 +526,18 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
         if e.key() == QtCore.Qt.Key_S:
             if not self.inFlight:
                 self.cmd_vel.linear.z = 0.3
+                if (not self.OAEnabled) and (not self.inFlight):
+                    self.cf.commander.send_hover_setpoint(self.cmd_vel.linear.x, self.cmd_vel.linear.y,
+                                                          self.cmd_vel.angular.z,
+                                                          self.cmd_vel.linear.z)
                 self.inFlight = True
             else:
-                self.cmd_vel.linear.z = 0.0
+                self.cmd_vel.linear.z = 0.1
+                if (not self.OAEnabled) and self.inFlight:
+                    self.cf.commander.send_hover_setpoint(self.cmd_vel.linear.x, self.cmd_vel.linear.y,
+                                                          self.cmd_vel.angular.z,
+                                                          self.cmd_vel.linear.z)
+                    self.cf.commander.send_stop_setpoint()
                 self.inFlight = False
         elif e.key() == QtCore.Qt.Key_U:
             self.cmd_vel.linear.z = self.cmd_vel.linear.z + 0.1
