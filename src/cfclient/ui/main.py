@@ -70,6 +70,7 @@ from crazyflie_clients_python.msg import vel_cmd
 from crazyflie_clients_python.msg import oa
 from operator import itemgetter
 from PyQt5 import QtCore
+# from cflib.positioning.motion_commander import MotionCommander
 
 __author__ = 'Bitcraze AB'
 __all__ = ['MainUI']
@@ -427,7 +428,7 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
         self.mytimer = QTimer(self)
         self.mytimer.setSingleShot(False)
         self.mytimer.timeout.connect(self.timer_callback)
-        self.mytimer.start(1000)
+        self.mytimer.start(1)
 
         self.move_possible_front = False
         self.move_possible_back = False
@@ -438,9 +439,21 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
         self.inFlight = False
         self.latObstPrsnt = False
         self.lonObstPrsnt = False
+        self.OAEnabled = False
 
         self.ranges = oa()
-        #
+
+        self.threshold = 300 #mm
+        self.kp = 1.0
+        self.kd = 0.1/1000.0
+        self.ki = 0.0
+        self.err_last = 0.0
+        self.err = 0.0
+        self.dt = 0.001
+        self.time_last = rospy.get_rostime()
+        self.time_curr = 0.0
+        self.speed_limit = 0.5
+    #
         # self.vx = 0.0
         # self.vy = 0.0
         # self.yawrate = 0.0
@@ -477,7 +490,10 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
         # self.cmd_vel.linear.z = 0.4
         # self.cmd_vel.angular.z = 0.0
         #
-        if self.cmd_vel.linear.z > 0.0:
+        # self.time_curr = rospy.get_rostime()
+        # self.dt = self.time_curr - self.time_last
+        # self.time_last = self.time_curr
+        if self.cmd_vel.linear.z > 0.2:
             # if self.cmd_vel.linear.z < 2.0:
             #     self.cf.commander.send_stop_setpoint()
             # else:
@@ -487,22 +503,31 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
             #     self.cmd_vel.linear.x = 0.2
             # else: self.cmd_vel.linear.x = 0.0
 
-            if self.ranges.rangeRight < 300:
-                self.cmd_vel.linear.y = 0.1
+            if self.ranges.rangeRight < self.threshold:
+                self.err = (self.threshold - self.ranges.rangeRight)/self.threshold
+                dedt = (self.err - self.err_last)/self.dt
+                self.cmd_vel.linear.y = self.kp * self.err + self.kd * dedt
+                self.cmd_vel.linear.y = self.clip(self.cmd_vel.linear.y, self.speed_limit)
+                self.err_last = self.err
                 self.latObstPrsnt = True
-            elif self.ranges.rangeLeft < 300:
-                self.cmd_vel.linear.y = -0.1
+            elif self.ranges.rangeLeft < self.threshold:
+                self.err = -(self.threshold - self.ranges.rangeLeft)/self.threshold
+                dedt = (self.err - self.err_last)/self.dt
+                self.cmd_vel.linear.y = self.kp * self.err + self.kd * dedt
+                self.cmd_vel.linear.y = self.clip(self.cmd_vel.linear.y, self.speed_limit)
+                self.err_last = self.err
                 self.latObstPrsnt = True
             elif self.latObstPrsnt:
                 self.cmd_vel.linear.y = 0.0
+                self.err_last = 0.0
                 self.latObstPrsnt = False
             elif not self.latObstPrsnt:
                 self.cmd_vel.linear.y = self.cmd_vel_man.linear.y
 
-            if self.ranges.rangeFront < 300:
+            if self.ranges.rangeFront < self.threshold:
                 self.cmd_vel.linear.x = -0.1
                 self.lonObstPrsnt = True
-            elif self.ranges.rangeBack < 300:
+            elif self.ranges.rangeBack < self.threshold:
                 self.cmd_vel.linear.x = 0.1
                 self.lonObstPrsnt = True
             elif self.lonObstPrsnt:
@@ -545,6 +570,14 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
             #     # self.done_back = False
             #     self.cf.commander.send_hover_setpoint(0,0,0,0.1)
             #     self.cf.commander.send_stop_setpoint()
+
+    def clip (self, x, limit):
+        if x >= limit:
+            return limit
+        elif x <= -limit:
+            return -limit
+        else:
+            return x
 
     def my_hover_callback(self, vx, vy, yawrate, zdistance):
         if (vx > 0.) and (self.ranges.rangeFront < 200):

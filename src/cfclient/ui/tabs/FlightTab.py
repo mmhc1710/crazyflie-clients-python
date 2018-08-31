@@ -47,7 +47,7 @@ from cfclient.ui.tab import Tab
 
 import rospy
 # import std_msgs.msg
-from crazyflie_clients_python.msg import oa
+from crazyflie_clients_python.msg import oa, vel_cmd
 from nav_msgs.msg import Odometry
 from tf.broadcaster import TransformBroadcaster
 # from crazyflie_clients_python.srv import AddTwoInts, AddTwoIntsResponse
@@ -330,6 +330,12 @@ class FlightTab(Tab, flight_tab_class):
             mymsg.stamp = rospy.get_rostime()
             self.pub.publish(mymsg)
             #
+            # states = vel_cmd()
+            # states.cmd_vel.linear.x = data["stateEstimate.vx"]
+            # states.cmd_vel.linear.y = data["stateEstimate.vy"]
+            # states.stamp = rospy.get_rostime()
+            # self.state_pub.publish(states)
+            #
             # mydata = '(' + 'pole' + ' ' + 'A' + ' ' + 'xpos' + ' ' + str(observation[0]) + ' ' + 'xvel' + ' ' + str(
             #     observation[1]) + ' ' + 'theta' + ' ' + str(observation[2]) + ' ' + 'omega' + ' ' + str(
             #     observation[3]) + ')' + '\n'
@@ -346,7 +352,7 @@ class FlightTab(Tab, flight_tab_class):
 
     def connected(self, linkURI):
         # IMU & THRUST
-        lg = LogConfig("Stabilizer", Config().get("ui_update_period"))
+        lg = LogConfig("Stabilizer", 1000)#Config().get("ui_update_period"))
         # lg = LogConfig("Stabilizer", 10)
         lg.add_variable("stabilizer.roll", "float")
         lg.add_variable("stabilizer.pitch", "float")
@@ -357,6 +363,9 @@ class FlightTab(Tab, flight_tab_class):
         lg.add_variable("oa.back", "uint16_t")
         lg.add_variable("oa.right", "uint16_t")
         lg.add_variable("oa.left", "uint16_t")
+
+        # lg.add_variable("stateEstimate.vx", "float")
+        # lg.add_variable("stateEstimate.vy", "float")
 
         try:
             self.helper.cf.log.add_config(lg)
@@ -404,8 +413,10 @@ class FlightTab(Tab, flight_tab_class):
 
         self._populate_assisted_mode_dropdown()
 
-        # rospy.init_node('cfclient', anonymous=False, disable_signals=False)
+        # rospy.init_node('ranges', anonymous=False, disable_signals=False)
         self.pub = rospy.Publisher('ranges', oa, queue_size=10)
+        # rospy.init_node('states', anonymous=False, disable_signals=False)
+        # self.state_pub = rospy.Publisher('states', vel_cmd, queue_size=10)
 
         # self.odom_pub = rospy.Publisher('odom', Odometry, queue_size=10)
         # self.odom_broadcaster = TransformBroadcaster()
