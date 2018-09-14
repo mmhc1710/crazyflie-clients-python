@@ -426,6 +426,7 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
         self.cmd_vel_man.angular.z = 0.0
 
         self.mytimer = QTimer(self)
+        #self.mytimer.setInterval(1) #msec
         self.mytimer.setSingleShot(False)
         self.mytimer.timeout.connect(self.timer_callback)
         self.mytimer.start(1)
@@ -461,41 +462,42 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
 
 
     def timer_callback(self):
-        if self.cmd_vel.linear.z > 0.2 and self.OAEnabled:
-            if self.ranges.rangeRight < self.threshold:
-                self.err = (self.threshold - self.ranges.rangeRight)/self.threshold
-                dedt = (self.err - self.err_last)/self.dt
-                self.cmd_vel.linear.y = self.kp * self.err + self.kd * dedt
-                self.cmd_vel.linear.y = self.clip(self.cmd_vel.linear.y, self.speed_limit)
-                self.err_last = self.err
-                self.latObstPrsnt = True
-            elif self.ranges.rangeLeft < self.threshold:
-                self.err = -(self.threshold - self.ranges.rangeLeft)/self.threshold
-                dedt = (self.err - self.err_last)/self.dt
-                self.cmd_vel.linear.y = self.kp * self.err + self.kd * dedt
-                self.cmd_vel.linear.y = self.clip(self.cmd_vel.linear.y, self.speed_limit)
-                self.err_last = self.err
-                self.latObstPrsnt = True
-            elif self.latObstPrsnt:
-                self.cmd_vel.linear.y = 0.0
-                self.err_last = 0.0
-                self.latObstPrsnt = False
-            elif not self.latObstPrsnt:
-                self.cmd_vel.linear.y = self.cmd_vel_man.linear.y
+        if self.cmd_vel.linear.z > 0.2:
+            if self.OAEnabled:
+                if self.ranges.rangeRight < self.threshold:
+                    self.err = (self.threshold - self.ranges.rangeRight)/self.threshold
+                    dedt = (self.err - self.err_last)/self.dt
+                    self.cmd_vel.linear.y = self.kp * self.err + self.kd * dedt
+                    self.cmd_vel.linear.y = self.clip(self.cmd_vel.linear.y, self.speed_limit)
+                    self.err_last = self.err
+                    self.latObstPrsnt = True
+                elif self.ranges.rangeLeft < self.threshold:
+                    self.err = -(self.threshold - self.ranges.rangeLeft)/self.threshold
+                    dedt = (self.err - self.err_last)/self.dt
+                    self.cmd_vel.linear.y = self.kp * self.err + self.kd * dedt
+                    self.cmd_vel.linear.y = self.clip(self.cmd_vel.linear.y, self.speed_limit)
+                    self.err_last = self.err
+                    self.latObstPrsnt = True
+                elif self.latObstPrsnt:
+                    self.cmd_vel.linear.y = 0.0
+                    self.err_last = 0.0
+                    self.latObstPrsnt = False
+                elif not self.latObstPrsnt:
+                    self.cmd_vel.linear.y = self.cmd_vel_man.linear.y
 
-            if self.ranges.rangeFront < self.threshold:
-                self.cmd_vel.linear.x = -0.1
-                self.lonObstPrsnt = True
-            elif self.ranges.rangeBack < self.threshold:
-                self.cmd_vel.linear.x = 0.1
-                self.lonObstPrsnt = True
-            elif self.lonObstPrsnt:
-                self.cmd_vel.linear.x = 0.0
-                self.lonObstPrsnt = False
-            elif not self.lonObstPrsnt:
-                self.cmd_vel.linear.x = self.cmd_vel_man.linear.x
+                if self.ranges.rangeFront < self.threshold:
+                    self.cmd_vel.linear.x = -0.1
+                    self.lonObstPrsnt = True
+                elif self.ranges.rangeBack < self.threshold:
+                    self.cmd_vel.linear.x = 0.1
+                    self.lonObstPrsnt = True
+                elif self.lonObstPrsnt:
+                    self.cmd_vel.linear.x = 0.0
+                    self.lonObstPrsnt = False
+                elif not self.lonObstPrsnt:
+                    self.cmd_vel.linear.x = self.cmd_vel_man.linear.x
 
-            self.cf.commander.send_hover_setpoint(self.cmd_vel.linear.x, self.cmd_vel.linear.y,
+                self.cf.commander.send_hover_setpoint(self.cmd_vel.linear.x, self.cmd_vel.linear.y,
                                                   self.cmd_vel.angular.z,
                                               self.cmd_vel.linear.z)
         self.vel_cmd.cmd_vel = self.cmd_vel
@@ -525,7 +527,7 @@ class MainUI(QtWidgets.QMainWindow, main_window_class):
     def newOnkeyPressEvent(self, e):
         if e.key() == QtCore.Qt.Key_S:
             if not self.inFlight:
-                self.cmd_vel.linear.z = 0.3
+                self.cmd_vel.linear.z = 0.4
                 if (not self.OAEnabled) and (not self.inFlight):
                     self.cf.commander.send_hover_setpoint(self.cmd_vel.linear.x, self.cmd_vel.linear.y,
                                                           self.cmd_vel.angular.z,

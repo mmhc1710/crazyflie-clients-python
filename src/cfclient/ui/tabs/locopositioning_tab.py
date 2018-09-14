@@ -49,6 +49,13 @@ from lpslib.lopoanchor import LoPoAnchor
 import copy
 import sys
 
+import rospy
+#import tf_conversions
+import tf2_ros
+import geometry_msgs.msg
+from nav_msgs.msg import Path
+
+
 from cfclient.ui.dialogs.anchor_position_wizard_dialog import \
     AnchorPositionWizardDialog
 
@@ -459,6 +466,8 @@ class LocoPositioningTab(Tab, locopositioning_tab_class):
         self._lps_state = self.LOCO_MODE_UNKNOWN
         self._update_lps_state(self.LOCO_MODE_UNKNOWN)
 
+        self.cfPath = Path()
+
     def _do_when_checked(self, enabled, fkn, arg):
         if enabled:
             fkn(arg)
@@ -725,6 +734,9 @@ class LocoPositioningTab(Tab, locopositioning_tab_class):
                         self._helper.cf.param.values[self.PARAM_MDOE_GR][
                             self.PARAM_MODE_NM])
 
+            #rospy.init_node('tf2_cf2_broadcaster')
+            self.path_pub = rospy.Publisher('cf_path', Path, queue_size=10)
+
     def _disconnected(self, link_uri):
         """Callback for when the Crazyflie has been disconnected"""
         logger.debug("Crazyflie disconnected from {}".format(link_uri))
@@ -775,6 +787,41 @@ class LocoPositioningTab(Tab, locopositioning_tab_class):
             valid, axis = self._parse_position_param_name(name)
             if valid:
                 self._position[axis] = float(value)
+
+                br = tf2_ros.TransformBroadcaster()
+                t = geometry_msgs.msg.TransformStamped()
+
+                t.header.stamp = rospy.Time.now()
+                t.header.frame_id = "map"
+                t.child_frame_id = "cf_base"
+                t.transform.translation.x = self._position[0]
+                t.transform.translation.y = self._position[1]
+                t.transform.translation.z = self._position[2]
+                #q = tf_conversions.transformations.quaternion_from_euler(0, 0, 0)
+                t.transform.rotation.x = 0#q[0]
+                t.transform.rotation.y = 0#q[1]
+                t.transform.rotation.z = 0#q[2]
+                t.transform.rotation.w = 1#q[3]
+
+                br.sendTransform(t)
+                #
+                # pose  = geometry_msgs.msg.PoseStamped()
+                # pose.header.stamp = t.header.stamp
+                # pose.header.frame_id = "map"
+                # pose.pose.position.x = self._position[0]
+                # pose.pose.position.y = self._position[1]
+                # pose.pose.position.z = self._position[2]
+                # pose.pose.orientation.x = 0
+                # pose.pose.orientation.y = 0
+                # pose.pose.orientation.z = 0
+                # pose.pose.orientation.w = 1
+                #
+                # self.cfPath.header.stamp = t.header.stamp
+                # self.cfPath.header.frame_id = "map"
+                # self.cfPath.poses.append(pose)
+                # self.path_pub.publish(self.cfPath)
+
+
 
         for anchor in range(8):
             bit_field = data["ranging.state"]

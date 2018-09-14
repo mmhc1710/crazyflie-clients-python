@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   roslisp
   std_msgs
   geometry_msgs
+  nav_msgs
   message_generation
 )
 
@@ -76,6 +77,7 @@ add_service_files(
    DEPENDENCIES
    std_msgs
    geometry_msgs
+   nav_msgs
  )
 
 ################################################
@@ -110,7 +112,7 @@ add_service_files(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES crazyflie_clients_python
-  CATKIN_DEPENDS rospy roslisp std_msgs geometry_msgs message_runtime
+  CATKIN_DEPENDS rospy roslisp std_msgs geometry_msgs nav_msgs message_runtime
 #  DEPENDS system_lib
 )
 
