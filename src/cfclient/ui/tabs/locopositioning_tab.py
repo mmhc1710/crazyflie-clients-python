@@ -804,22 +804,22 @@ class LocoPositioningTab(Tab, locopositioning_tab_class):
                 t.transform.rotation.w = 1#q[3]
 
                 br.sendTransform(t)
-                #
-                # pose  = geometry_msgs.msg.PoseStamped()
-                # pose.header.stamp = t.header.stamp
-                # pose.header.frame_id = "map"
-                # pose.pose.position.x = self._position[0]
-                # pose.pose.position.y = self._position[1]
-                # pose.pose.position.z = self._position[2]
-                # pose.pose.orientation.x = 0
-                # pose.pose.orientation.y = 0
-                # pose.pose.orientation.z = 0
-                # pose.pose.orientation.w = 1
-                #
-                # self.cfPath.header.stamp = t.header.stamp
-                # self.cfPath.header.frame_id = "map"
-                # self.cfPath.poses.append(pose)
-                # self.path_pub.publish(self.cfPath)
+
+                pose  = geometry_msgs.msg.PoseStamped()
+                pose.header.stamp = rospy.Time.now()
+                pose.header.frame_id = "map"
+                pose.pose.position.x = self._position[0]
+                pose.pose.position.y = self._position[1]
+                pose.pose.position.z = self._position[2]
+                pose.pose.orientation.x = 0
+                pose.pose.orientation.y = 0
+                pose.pose.orientation.z = 0
+                pose.pose.orientation.w = 1
+
+                self.cfPath.header.stamp = rospy.Time.now()
+                self.cfPath.header.frame_id = "map"
+                self.cfPath.poses.append(pose)
+                self.path_pub.publish(self.cfPath)
 
 
 
