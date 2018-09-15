@@ -84,6 +84,7 @@ class FlightTab(Tab, flight_tab_class):
     _hover_input_updated_signal = pyqtSignal(float, float, float, float)
 
     _log_error_signal = pyqtSignal(object, str)
+    _oa_param_updated_signal = pyqtSignal(str, str)
 
     # _handle_add_two_ints_signal = pyqtSignal(object)
 
@@ -237,6 +238,27 @@ class FlightTab(Tab, flight_tab_class):
         self.helper.inputDeviceReader.limiting_updated.add_callback(
             self._limiting_updated.emit)
         self._limiting_updated.connect(self._set_limiting_enabled)
+
+        self._enable_oa.clicked.connect(
+            lambda enable:
+            self.helper.cf.param.set_value("oa.OAEnabled", str(enable))
+        )
+
+        self.vx.valueChanged.connect(self._set_vx_value)
+        self._oa_param_updated_signal.connect(self.oa_param_updated)
+        self.helper.cf.param.add_update_callback(group="oa", cb=self._oa_param_updated_signal.emit)
+
+    def _set_vx_value(self, value):
+        self.helper.cf.param.set_value("oa.vx", str(value))
+
+    def oa_param_updated(self, name, value):
+        logger.debug("Updated {0} to {1}".format(name, value))
+
+        try:
+            self._enable_oa.setChecked(int(self.helper.cf.param.values["oa"]["OAEnabled"]))
+            self.vx.setValue(float(self.helper.cf.param.values["oa"]["vx"]))
+        except KeyError:
+            return
 
     def _set_enable_client_xmode(self, name, value):
         if eval(value) <= 128:
@@ -435,6 +457,7 @@ class FlightTab(Tab, flight_tab_class):
         # QTimer.singleShot(30000, self.set_althold)
         # self.helper.cf.param.set_value("flightmode.althold", str(1))
         # self.helper.cf.param.set_value("flightmode.althold", str(0))
+
 
     def set_althold(self):
         self.helper.cf.param.set_value("flightmode.althold", 1)
