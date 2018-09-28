@@ -64,7 +64,7 @@ __all__ = ['JoystickReader']
 logger = logging.getLogger(__name__)
 
 MAX_THRUST = 65000
-INITAL_TAGET_HEIGHT = 0.5
+INITAL_TAGET_HEIGHT = 0.3
 MAX_TARGET_HEIGHT = 1.0
 MIN_TARGET_HEIGHT = 0.03
 MIN_HOVER_HEIGHT = 0.20

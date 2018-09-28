@@ -239,10 +239,7 @@ class FlightTab(Tab, flight_tab_class):
             self._limiting_updated.emit)
         self._limiting_updated.connect(self._set_limiting_enabled)
 
-        self._enable_oa.clicked.connect(
-            lambda enable:
-            self.helper.cf.param.set_value("oa.OAEnabled", str(enable))
-        )
+        self._enable_oa.clicked.connect(self._oa_button_updated)
 
         self.vx.valueChanged.connect(self._set_vx_value)
         self._oa_param_updated_signal.connect(self.oa_param_updated)
@@ -250,6 +247,13 @@ class FlightTab(Tab, flight_tab_class):
 
     def _set_vx_value(self, value):
         self.helper.cf.param.set_value("oa.vx", str(value))
+        self.helper.cf.param.set_value("oa.threshold", str(700))
+        self.helper.cf.param.set_value("oa.lon_kp", str(20.0))
+        # self.helper.cf.param.set_value("oa.lon_kd", str(0.01))
+        # self.helper.cf.param.set_value("oa.lat_kp", str(2.5))
+        # self.helper.cf.param.set_value("oa.lat_kd", str(0.0001))
+        self.helper.cf.param.set_value("oa.speed_limit", str(10.0))
+
 
     def oa_param_updated(self, name, value):
         logger.debug("Updated {0} to {1}".format(name, value))
@@ -257,8 +261,19 @@ class FlightTab(Tab, flight_tab_class):
         try:
             self._enable_oa.setChecked(int(self.helper.cf.param.values["oa"]["OAEnabled"]))
             self.vx.setValue(float(self.helper.cf.param.values["oa"]["vx"]))
+
         except KeyError:
             return
+
+    def _oa_button_updated (self, enable):
+        self.helper.cf.param.set_value("oa.OAEnabled", str(enable))
+        if enable:
+            self.helper.cf.param.set_value("pid_rate.pitch_kd", str(15))
+            self.helper.cf.param.set_value("pid_rate.roll_kd", str(15))
+        else:
+            self.helper.cf.param.set_value("pid_rate.pitch_kd", str(2.5))
+            self.helper.cf.param.set_value("pid_rate.roll_kd", str(2.5))
+
 
     def _set_enable_client_xmode(self, name, value):
         if eval(value) <= 128:
